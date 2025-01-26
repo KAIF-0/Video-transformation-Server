@@ -12,6 +12,8 @@
   "license": "ISC",
   "dependencies": {
     "@hono/node-server": "^1.13.7",
+    "cloudinary": "^2.5.1",
+    "creatomate": "^1.2.1",
     "hono": "^4.6.18"
   }
 }

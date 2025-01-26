@@ -1,72 +1,82 @@
-import Creatomate from 'Creatomate'
-// const { endianness } = require('os');
-// const { text } = require('stream/consumers');
+import cloudinary from 'cloudinary';
+import { v2 as cloudinaryV2 } from 'cloudinary';
 
-async function generatevideo(transcption_details, video_details, audio_link) {
-    const client = new Creatomate.client("api key");
 
-    const scenes = video_details.map((video, index) => ({
-        type: 'composition',
-        duration: video.duration,
-        elements: [
-            {
-                type: 'video',
-                source: video.url,
-                fit: 'cover',
+
+cloudinaryV2.config({ 
+    cloud_name: 'dm4vwtxjs', 
+    api_key: '127371483375234', 
+    api_secret: 'SwsquzkFInW4tpbnBwi5AlscLEY',
+    secure: true,
+})
+
+const generateVideo = async (transcription_details, video_details, audio_link) => {
+  try {
+
+
+    const videoSources = video_details.map((video, index) => {
+      const transcription = transcription_details[index];
+      return {
+        resource_type: 'video',
+        type: 'fetch',
+        public_id: video.url, 
+        transformation: [
+          {
+            overlay: {
+              font_family: 'Arial',
+              font_size: 30,
+              text: transcription.text, 
+              gravity: 'center',
+              color: 'white',
+              background: 'rgba(0, 0, 0, 0.5)',
             },
-            {
-                type: 'text',
-                text: getTranscriptionFortime(transcption_details, video.startTime),
-                y: '85%',
-                color: '#ffffff',
-                background_color: 'rgba(0,0,0,0.5)',
-                animations: [
-                    new Creatomate.TextSlideUpLineByLine({
-                        time: 0,
-                        duration: 1,
-                        easing: 'quadratic-out'
-                    })
-                ]
-            }
-        ]
-    }));
-
-    const audioElement = {
-        type: 'audio',
-        source: audio_link,
-        duration: getTotalDuration(video_details),
-        audioFadeOut: 2,
-    };
-
-    const render = await client.render({
-        output_format: 'mp4',
-        elements: [
-            audioElement,
-            ...scenes,
-        ]
+            start_offset: transcription.start, 
+            end_offset: transcription.end, 
+          },
+          { width: 1280, height: 720, crop: 'scale' },
+        ],
+      };
     });
-    return render.url;
-}
 
-function getTranscriptionFortime(transcriptons, time) {
-    return transcriptons.find(t =>
-        time >= t.startTime && time <= t.endTime)?.text || '';
-}
+    //audio
+    const audioSource = {
+        resource_type: 'video',
+        type: 'fetch',
+        public_id: audio_link, // Use the uploaded audio URL
+        transformation: [
+          { overlay: 'audio', start_offset: 0, end_offset: 'duration' }, // Add audio to the entire video
+        ],
+      };
+  
+      // Combine the videos and audi
+      const final = [
+        ...videoSources,
+        audioSource, 
+      ];
 
-function getTotalDuration(videos) {
-    return videos.reduce((sum, video) => sum + video.duration, 0);
-}
+    // console.log(final)
 
-const transcriptions = [
-    { text: "Hello world", startTime: 0, endTime: 3 },
-    { text: "Second text", startTime: 3, endTime: 6 }
-];
+    //combinig all videos with audio
+    const uploadResult = await cloudinaryV2.uploader.upload(
+      `video/${JSON.stringify(final)}`,
+      {
+        resource_type: 'video',
+        public_id: 'generated_video', 
+        overwrite: true,
+      }
+    );
 
-const videos = [
-    { url: "video1.mp4", duration: 3, startTime: 0 },
-    { url: "video2.mp4", duration: 3, startTime: 3 },
-];
+    // const uploadResult = await cloudinaryV2.uploader
+    // .upload('3571264-hd_1280_720_30fps.mp4', {
+    //   folder: 'videos',
+    //   resource_type: 'video'})
+    // .then(console.log);
 
-const audioUrl = "background-music.mp3";
+    // console.log('Video generated successfully:', uploadResult);
+    return "uploadResult.secure_url"; 
+  } catch (error) {
+    console.error('Error generating video:', error);
+  }
+};
 
-const videoUrl = await generatevideo(transcriptions, videos, audioUrl);
+export default generateVideo;
