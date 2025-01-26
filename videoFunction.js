@@ -28,7 +28,7 @@ const generateVideo = async (videoDetails, audioPath, transcriptionDetails) => {
         .on("end", ()=>console.log("MERGING DONE!"))
         .on("error", (err)=>console.log(err)
         )
-        .saveToFile('./mergeVideo.mp4')
+        .mergeToFile('mergeVideo.mp4')
     });
 
     // Step 4: Add audio and subtitles
